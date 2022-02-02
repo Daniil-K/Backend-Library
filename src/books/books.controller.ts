@@ -14,6 +14,8 @@ import { Books } from './books.entity';
 import { AddToUserDto } from './dto/add-to-user.dto';
 import { UpdateBooksDto } from './dto/update-books.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { createConnection, getConnection } from 'typeorm';
+import { Users } from '../users/users.entity';
 
 @ApiBearerAuth('Daniil Klimov')
 @ApiTags('books')
@@ -22,31 +24,6 @@ export class BooksController {
 
   constructor(private readonly booksService: BooksService,
               private readonly usersService: UsersService) {
-  }
-
-  // Получение всего списка книг
-  @Get()
-  @ApiOperation({ summary: 'Search all books' })
-  getAll() : Promise<Books[]> {
-    return this.booksService.findAll();
-  }
-
-  // Получение информации о конкретной книге
-  @Get(':id')  // Поиск по конкретному id
-  @ApiOperation({ summary: 'Search book by id' })
-  @ApiResponse({
-    status: 200,
-    description: 'Search book by id',
-    type: Books,
-  })
-  async getOne(@Param('id') id : string) : Promise<Books> {
-    const book = this.booksService.findOne(id);
-    if (book === undefined) {
-      throw new HttpException(
-        'Book with id = ' + id + ' not exists',
-        HttpStatus.NOT_FOUND);
-    }
-    return book;  // Возвращение полученных данных из таблицы
   }
 
   // Создание книги
@@ -64,18 +41,6 @@ export class BooksController {
       book.employ = createBooksDto.employ;  // При создании нового пользователя подписка не подключена
     }
     return this.booksService.create(book);
-  }
-
-  // Удаление книги из каталога
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete book' })
-  @ApiResponse({
-    status: 200,
-    description: 'Book deleted',
-    type: Books,
-  })
-  remove(@Param('id') id : string) : Promise<void> {
-    return this.booksService.remove(id)
   }
 
   // Добавление книги к пользователю
@@ -108,11 +73,24 @@ export class BooksController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Book return' })
+  @ApiResponse({
+    status: 200,
+    description: 'Book returned',
+    type: Books,
+  })
   async employfree(
     @Param('id') id : string,
-    @Body() {employ = false} : UpdateBooksDto) :Promise<Books> {
+    @Body() {User} : AddToUserDto) :Promise<Books> {
     const book = await this.booksService.findOne(id);
-    book.employ = employ;
+    const user = await this.usersService.findOne(User);
+    if (book.employ === false) {  // Если книга занята, то выдаем ошибку
+      throw new HttpException(
+        'Book with id = ' + id + ' employed',
+        HttpStatus.NOT_FOUND);
+    }
+    book.employ = false;
+    delete book.user;
     return this.booksService.employfree(book);
   }
 

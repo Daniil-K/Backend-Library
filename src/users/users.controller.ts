@@ -1,15 +1,13 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get, HttpException, HttpStatus,
-  NotFoundException,
   Param, Patch,
   Post,
   Put,
 } from '@nestjs/common';
-import {getManager, getRepository} from "typeorm";
+import { createQueryBuilder, getConnection, getManager, getRepository } from 'typeorm';
 import { CreateUsersDto } from './dto/create-users.dto';
 import { UpdateUsersDto } from './dto/update-users.dto';
 import { UsersService } from './users.service';
@@ -44,17 +42,10 @@ export class UsersController {
   })
   async getOne(@Param('id') id: string) : Promise<Users> {
     const user = this.usersService.findOne(id);
-    /**const book = await getRepository(Books);
-    book.createQueryBuilder()
-      .where("user_id = :id", {id : parseInt(id)})
-      .getMany();
-
-    /**for (let i = 0; i < Books.length; i++) {
-      const book = await this.booksService.findOne('i');
-      if (book.user.id === parseInt(id)) {
-        console.log(book.title);
-      }
-    }**/
+    const userRepository = await getRepository(Users)
+    const users = await userRepository.find({ relations: ["books"],
+                                              where: [{ id : parseInt(id)}] }); // Получение всех книг пользователя
+    console.log(users);
     if (user === undefined) {
       throw new HttpException(
         'User with id = ' + id + ' not exists',

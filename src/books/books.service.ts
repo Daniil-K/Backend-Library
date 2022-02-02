@@ -10,11 +10,6 @@ export class BooksService {
     private booksRepository: Repository<Books>,
   ) {}
 
-  // Поиск всех книг
-  findAll(): Promise<Books[]> {
-    return this.booksRepository.find();
-  }
-
   // Поиск конкретной книги
   findOne(id: string): Promise<Books> {
     return this.booksRepository.findOne(id);
@@ -35,8 +30,4 @@ export class BooksService {
     return this.booksRepository.save(books);
   }
 
-  // Удаление книги
-  async remove(id: string): Promise<void> {
-    await this.booksRepository.delete(id);
-  }
 }
